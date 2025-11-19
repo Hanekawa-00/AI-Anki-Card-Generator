@@ -1,0 +1,5 @@
+{
+  "name": "FlashGenius - AI Anki Card Generator",
+  "description": "A modern web application to generate beautiful flashcards using Gemini AI and sync them directly to your local Anki using AnkiConnect.",
+  "requestFramePermissions": []
+}
