@@ -29,6 +29,10 @@ export const translations = {
     editCard: "Edit Card",
     deleteCard: "Delete Card",
     doneEditing: "Done Editing",
+    studyMode: "Study Mode",
+    editMode: "Editor Mode",
+    clickToReveal: "Click to reveal answer",
+    tagsLabel: "Tags (comma separated):",
     // Export Bar
     cardsReady: "Cards Ready",
     reviewAndExport: "Review and export to Anki",
@@ -48,12 +52,14 @@ export const translations = {
     tip: "Tip: Use \"*\" to allow all connections for simplicity. Restart Anki after changing config.",
     close: "Close",
     retry: "Retry Connection",
-    // Alerts
+    // Alerts/Toasts
     exportSuccess: "Successfully exported {n} cards to deck \"{deck}\"!",
-    duplicatesSkipped: "\n({n} duplicates were skipped)",
-    exportNoNew: "Sync complete. No new cards were added because all {n} cards already exist in deck \"{deck}\".",
+    duplicatesSkipped: " ({n} duplicates skipped)",
+    exportNoNew: "All {n} cards already exist in deck \"{deck}\".",
     exportError: "An error occurred during export.",
-    genError: "Failed to generate cards. Please check your API Key or Try again."
+    genError: "Failed to generate cards. Please check your API Key.",
+    clearedSuccess: "All cards cleared.",
+    copied: "Copied to clipboard!"
   },
   zh: {
     appTitle: "FlashGenius",
@@ -84,6 +90,10 @@ export const translations = {
     editCard: "编辑卡片",
     deleteCard: "删除卡片",
     doneEditing: "完成编辑",
+    studyMode: "学习模式",
+    editMode: "编辑模式",
+    clickToReveal: "点击查看答案",
+    tagsLabel: "标签 (逗号分隔)：",
     // Export Bar
     cardsReady: "张卡片就绪",
     reviewAndExport: "预览并导出到 Anki",
@@ -103,11 +113,13 @@ export const translations = {
     tip: "提示：使用 \"*\" 允许所有连接。更改配置后请重启 Anki。",
     close: "关闭",
     retry: "重试连接",
-    // Alerts
+    // Alerts/Toasts
     exportSuccess: "成功导出 {n} 张卡片到牌组 \"{deck}\"！",
-    duplicatesSkipped: "\n（跳过了 {n} 张重复卡片）",
-    exportNoNew: "同步完成。牌组 \"{deck}\" 中已存在所有 {n} 张卡片，未添加新卡片。",
+    duplicatesSkipped: " （跳过 {n} 张重复）",
+    exportNoNew: "牌组 \"{deck}\" 中已存在所有 {n} 张卡片。",
     exportError: "导出过程中发生错误。",
-    genError: "生成卡片失败。请检查您的 API 密钥或重试。"
+    genError: "生成卡片失败。请检查您的 API 密钥。",
+    clearedSuccess: "已清空所有卡片。",
+    copied: "已复制到剪贴板！"
   }
 };

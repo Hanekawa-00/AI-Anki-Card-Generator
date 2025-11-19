@@ -1,3 +1,4 @@
+
 export interface Flashcard {
   id: string;
   front: string;
@@ -30,4 +31,12 @@ export enum AnkiConnectionStatus {
   DISCONNECTED = 'DISCONNECTED',
   CONNECTED = 'CONNECTED',
   ERROR = 'ERROR',
+}
+
+export type ToastType = 'success' | 'error' | 'info';
+
+export interface ToastMessage {
+  id: string;
+  type: ToastType;
+  message: string;
 }

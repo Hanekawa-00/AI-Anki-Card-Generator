@@ -1,18 +1,45 @@
 
 import React, { useState } from 'react';
 import { Flashcard } from '../types';
-import { Trash2, Tag, Edit3, Check, X } from 'lucide-react';
+import { Trash2, Tag, Edit3, Check, X, Eye, EyeOff, Hash } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface CardListProps {
   cards: Flashcard[];
-  onUpdateCard: (id: string, field: 'front' | 'back', value: string) => void;
+  onUpdateCard: (id: string, field: 'front' | 'back' | 'tags', value: string | string[]) => void;
   onDeleteCard: (id: string) => void;
 }
 
 export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDeleteCard }) => {
   const { t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [studyMode, setStudyMode] = useState(false);
+  const [revealedCards, setRevealedCards] = useState<Set<string>>(new Set());
+  
+  // Temp state for editing tags
+  const [tempTags, setTempTags] = useState('');
+
+  const handleStartEdit = (card: Flashcard) => {
+    setEditingId(card.id);
+    setTempTags(card.tags.join(', '));
+  };
+
+  const handleSaveEdit = (cardId: string) => {
+    // Process tags
+    const processedTags = tempTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+    onUpdateCard(cardId, 'tags', processedTags);
+    setEditingId(null);
+  };
+
+  const toggleReveal = (id: string) => {
+    const newRevealed = new Set(revealedCards);
+    if (newRevealed.has(id)) {
+      newRevealed.delete(id);
+    } else {
+      newRevealed.add(id);
+    }
+    setRevealedCards(newRevealed);
+  };
 
   if (cards.length === 0) {
     return (
@@ -29,32 +56,54 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Toolbar */}
+      <div className="flex justify-end items-center mb-4">
+        <button
+          onClick={() => {
+            setStudyMode(!studyMode);
+            setRevealedCards(new Set()); // Reset reveals when toggling mode
+          }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            studyMode 
+              ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 ring-1 ring-violet-200 dark:ring-violet-700' 
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+          }`}
+        >
+          {studyMode ? <EyeOff size={16} /> : <Eye size={16} />}
+          <span>{studyMode ? t.editMode : t.studyMode}</span>
+        </button>
+      </div>
+
       {cards.map((card, index) => {
         const isEditing = editingId === card.id;
+        const isRevealed = revealedCards.has(card.id);
 
         return (
           <div 
             key={card.id} 
-            className="relative bg-white dark:bg-slate-800 rounded-[24px] shadow-lg shadow-slate-200/60 dark:shadow-slate-900/40 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300 animate-slide-up group"
+            className={`relative bg-white dark:bg-slate-800 rounded-[24px] shadow-lg shadow-slate-200/60 dark:shadow-slate-900/40 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 animate-slide-up group ${
+              studyMode && !isRevealed ? 'cursor-pointer hover:shadow-xl hover:scale-[1.01]' : ''
+            }`}
             style={{ animationDelay: `${index * 0.05}s` }}
+            onClick={() => studyMode && !isRevealed && toggleReveal(card.id)}
           >
             {/* Decorative Top Bar */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 to-violet-500"></div>
 
             {/* Card Header / Actions */}
             <div className="px-8 pt-8 flex justify-between items-start">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 max-w-[70%]">
                 {card.tags.map((tag, i) => (
                   <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 tracking-wide transition-colors">
                     #{tag}
                   </span>
                 ))}
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className={`flex items-center gap-1 transition-opacity ${studyMode ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
                 {!isEditing && (
                    <button 
-                    onClick={() => setEditingId(card.id)}
+                    onClick={(e) => { e.stopPropagation(); handleStartEdit(card); }}
                     className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors"
                     title={t.editCard}
                   >
@@ -62,7 +111,7 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
                   </button>
                 )}
                 <button 
-                  onClick={() => onDeleteCard(card.id)}
+                  onClick={(e) => { e.stopPropagation(); onDeleteCard(card.id); }}
                   className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                   title={t.deleteCard}
                 >
@@ -81,12 +130,14 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
                 </span>
                 
                 {isEditing ? (
-                  <textarea
-                    value={card.front}
-                    onChange={(e) => onUpdateCard(card.id, 'front', e.target.value)}
-                    className="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y text-slate-800 dark:text-slate-200 min-h-[140px] font-mono text-sm leading-relaxed"
-                    placeholder="Front content..."
-                  />
+                  <div className="space-y-4">
+                    <textarea
+                      value={card.front}
+                      onChange={(e) => onUpdateCard(card.id, 'front', e.target.value)}
+                      className="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y text-slate-800 dark:text-slate-200 min-h-[120px] font-mono text-sm leading-relaxed"
+                      placeholder="Front content..."
+                    />
+                  </div>
                 ) : (
                   <div className="flex-1 flex flex-col justify-center">
                      <div 
@@ -109,47 +160,75 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
                     {t.answer}
                 </span>
 
-                {isEditing ? (
-                  <textarea
-                    value={card.back}
-                    onChange={(e) => onUpdateCard(card.id, 'back', e.target.value)}
-                    className="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none resize-y text-slate-800 dark:text-slate-200 min-h-[140px] font-mono text-sm leading-relaxed"
-                    placeholder="Back content..."
-                  />
-                ) : (
-                  <div className="flex-1">
-                     <div 
-                        className="text-[1.1rem] text-slate-600 dark:text-slate-300 leading-relaxed 
-                        [&>p]:mb-3 
-                        [&>ul]:list-none [&>ul]:ml-0 [&>ul]:my-4 
-                        [&>li]:relative [&>li]:pl-6 [&>li]:mb-2 
-                        [&>li:before]:content-['→'] [&>li:before]:absolute [&>li:before]:left-0 [&>li:before]:text-violet-500 dark:[&>li:before]:text-violet-400 [&>li:before]:font-bold 
-                        [&>strong]:text-blue-600 dark:[&>strong]:text-blue-400 [&>strong]:font-bold 
-                        [&>em]:text-pink-700 dark:[&>em]:text-pink-400 [&>em]:not-italic [&>em]:font-semibold [&>em]:bg-pink-100 dark:[&>em]:bg-pink-900/20 [&>em]:px-1 [&>em]:rounded 
-                        [&>code]:text-red-500 dark:[&>code]:text-red-400 [&>code]:bg-slate-100 dark:[&>code]:bg-slate-700/50 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:border [&>code]:border-slate-200 dark:[&>code]:border-slate-600 [&>code]:text-[0.85em] [&>code]:font-mono"
-                        dangerouslySetInnerHTML={{ __html: card.back }} 
-                     />
+                {studyMode && !isRevealed && !isEditing ? (
+                  <div className="flex-1 flex items-center justify-center min-h-[120px] text-slate-400 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 select-none">
+                    <div className="flex flex-col items-center gap-2">
+                      <EyeOff size={24} className="animate-pulse" />
+                      <span className="text-sm font-medium">{t.clickToReveal}</span>
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    {isEditing ? (
+                      <div className="space-y-4">
+                        <textarea
+                          value={card.back}
+                          onChange={(e) => onUpdateCard(card.id, 'back', e.target.value)}
+                          className="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none resize-y text-slate-800 dark:text-slate-200 min-h-[120px] font-mono text-sm leading-relaxed"
+                          placeholder="Back content..."
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex-1 animate-fade-in">
+                         <div 
+                            className="text-[1.1rem] text-slate-600 dark:text-slate-300 leading-relaxed 
+                            [&>p]:mb-3 
+                            [&>ul]:list-none [&>ul]:ml-0 [&>ul]:my-4 
+                            [&>li]:relative [&>li]:pl-6 [&>li]:mb-2 
+                            [&>li:before]:content-['→'] [&>li:before]:absolute [&>li:before]:left-0 [&>li:before]:text-violet-500 dark:[&>li:before]:text-violet-400 [&>li:before]:font-bold 
+                            [&>strong]:text-blue-600 dark:[&>strong]:text-blue-400 [&>strong]:font-bold 
+                            [&>em]:text-pink-700 dark:[&>em]:text-pink-400 [&>em]:not-italic [&>em]:font-semibold [&>em]:bg-pink-100 dark:[&>em]:bg-pink-900/20 [&>em]:px-1 [&>em]:rounded 
+                            [&>code]:text-red-500 dark:[&>code]:text-red-400 [&>code]:bg-slate-100 dark:[&>code]:bg-slate-700/50 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:border [&>code]:border-slate-200 dark:[&>code]:border-slate-600 [&>code]:text-[0.85em] [&>code]:font-mono"
+                            dangerouslySetInnerHTML={{ __html: card.back }} 
+                         />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
 
             {/* Edit Actions Footer */}
             {isEditing && (
-              <div className="px-8 py-4 bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
-                 <button 
-                  onClick={() => setEditingId(null)}
-                  className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
-                >
-                  <X size={20} />
-                </button>
-                <button 
-                  onClick={() => setEditingId(null)}
-                  className="flex items-center gap-2 px-5 py-2 bg-slate-900 dark:bg-slate-200 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 rounded-xl font-medium text-sm transition-all shadow-lg shadow-slate-900/20 dark:shadow-none"
-                >
-                  <Check size={16} />
-                  <span>{t.doneEditing}</span>
-                </button>
+              <div className="px-8 py-6 bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-4">
+                 {/* Tag Editor */}
+                 <div className="flex items-center gap-3">
+                    <Hash className="text-slate-400" size={16} />
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{t.tagsLabel}</label>
+                    <input 
+                      type="text" 
+                      value={tempTags}
+                      onChange={(e) => setTempTags(e.target.value)}
+                      className="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="tag1, tag2"
+                    />
+                 </div>
+
+                 <div className="flex justify-end gap-3 mt-2">
+                    <button 
+                      onClick={() => setEditingId(null)}
+                      className="p-2 px-4 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors text-sm font-medium"
+                    >
+                      <X size={18} className="inline mr-1" /> {t.close}
+                    </button>
+                    <button 
+                      onClick={() => handleSaveEdit(card.id)}
+                      className="flex items-center gap-2 px-5 py-2 bg-slate-900 dark:bg-slate-200 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 rounded-xl font-medium text-sm transition-all shadow-lg shadow-slate-900/20 dark:shadow-none"
+                    >
+                      <Check size={16} />
+                      <span>{t.doneEditing}</span>
+                    </button>
+                 </div>
               </div>
             )}
           </div>

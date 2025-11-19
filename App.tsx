@@ -6,9 +6,10 @@ import { Generator } from './components/Generator';
 import { CardList } from './components/CardList';
 import { ExportBar } from './components/ExportBar';
 import { AnkiStatusModal } from './components/AnkiStatusModal';
+import { ToastContainer } from './components/Toast';
 import { checkConnection, getDeckNames, addNotes, createDeck } from './services/ankiService';
 import { generateFlashcards } from './services/geminiService';
-import { Flashcard, AnkiConnectionStatus, AppState } from './types';
+import { Flashcard, AnkiConnectionStatus, AppState, ToastMessage, ToastType } from './types';
 import { useLanguage } from './contexts/LanguageContext';
 
 const App: React.FC = () => {
@@ -21,9 +22,13 @@ const App: React.FC = () => {
   const [generatedCards, setGeneratedCards] = useState<Flashcard[]>([]);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Toast State
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
   // Theme Management
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
+  // Load Persisted State
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     if (savedTheme) {
@@ -31,8 +36,19 @@ const App: React.FC = () => {
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setTheme('dark');
     }
+
+    // Load saved cards
+    const savedCards = localStorage.getItem('flashgenius_cards');
+    if (savedCards) {
+      try {
+        setGeneratedCards(JSON.parse(savedCards));
+      } catch (e) {
+        console.error("Failed to load saved cards");
+      }
+    }
   }, []);
 
+  // Persist Theme
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -42,13 +58,26 @@ const App: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Persist Cards
+  useEffect(() => {
+    localStorage.setItem('flashgenius_cards', JSON.stringify(generatedCards));
+  }, [generatedCards]);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  const addToast = (message: string, type: ToastType = 'info') => {
+    const id = uuidv4();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
   // Initialize Connection
   const initAnki = useCallback(async () => {
-    // Checking connection also attempts to ensure the custom model exists
     const connected = await checkConnection();
     if (connected) {
       setAnkiStatus(AnkiConnectionStatus.CONNECTED);
@@ -71,7 +100,6 @@ const App: React.FC = () => {
   const handleGenerate = async (topic: string, count: number, context: string) => {
     setAppState(AppState.GENERATING);
     try {
-      // Pass current language to Gemini
       const rawCards = await generateFlashcards(topic, count, context, language);
       const newCards: Flashcard[] = rawCards.map(c => ({
         id: uuidv4(),
@@ -79,20 +107,29 @@ const App: React.FC = () => {
         back: c.back,
         tags: c.tags
       }));
+      // Append to existing instead of replace? For now replace to keep it clean, 
+      // but in a real app maybe append is better. Let's stick to replace for "Generation" flow.
       setGeneratedCards(newCards);
       setAppState(AppState.REVIEW);
     } catch (error) {
-      alert(t.genError);
+      addToast(t.genError, 'error');
       setAppState(AppState.IDLE);
     }
   };
 
-  const handleUpdateCard = (id: string, field: 'front' | 'back', value: string) => {
+  const handleUpdateCard = (id: string, field: 'front' | 'back' | 'tags', value: string | string[]) => {
     setGeneratedCards(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
   const handleDeleteCard = (id: string) => {
     setGeneratedCards(prev => prev.filter(c => c.id !== id));
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm("Are you sure you want to delete all cards?")) {
+      setGeneratedCards([]);
+      addToast(t.clearedSuccess, 'success');
+    }
   };
 
   const handleExport = async (deckName: string) => {
@@ -103,7 +140,6 @@ const App: React.FC = () => {
     
     setIsExporting(true);
     try {
-      // Check if deck needs creation (simple check against known decks)
       if (!decks.includes(deckName)) {
         await createDeck(deckName);
         setDecks(prev => [...prev, deckName]);
@@ -120,26 +156,28 @@ const App: React.FC = () => {
         if (duplicateCount > 0) {
           message += t.duplicatesSkipped.replace('{n}', duplicateCount.toString());
         }
-        alert(message);
-        setGeneratedCards([]); // Clear after export
+        addToast(message, 'success');
+        // Optional: Clear cards after successful export? 
+        // Let's keep them in case user wants to export to another deck.
         setAppState(AppState.IDLE);
       } else if (duplicateCount > 0) {
-        // If all were duplicates
         const msg = t.exportNoNew.replace('{n}', duplicateCount.toString()).replace('{deck}', deckName);
-        alert(msg);
+        addToast(msg, 'info');
       } else {
-        alert(t.exportError);
+        addToast(t.exportError, 'error');
       }
     } catch (error) {
       console.error(error);
-      alert(t.exportError);
+      addToast(t.exportError, 'error');
     } finally {
       setIsExporting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300 font-sans">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+
       <Header 
         ankiStatus={ankiStatus} 
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -158,25 +196,27 @@ const App: React.FC = () => {
 
         {/* Results Section */}
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-              {appState === AppState.IDLE && generatedCards.length === 0 ? t.recentCards : t.generatedCards}
-            </h2>
-            {generatedCards.length > 0 && (
-              <button 
-                onClick={() => setGeneratedCards([])}
-                className="text-sm text-red-500 hover:text-red-600 font-medium"
-              >
-                {t.clearAll}
-              </button>
-            )}
-          </div>
-          
-          <CardList 
-            cards={generatedCards} 
-            onUpdateCard={handleUpdateCard} 
-            onDeleteCard={handleDeleteCard} 
-          />
+          {(generatedCards.length > 0 || appState === AppState.REVIEW) && (
+            <div className="animate-fade-in">
+              <div className="flex items-center justify-between mb-4 px-1">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                  {t.generatedCards}
+                </h2>
+                <button 
+                  onClick={handleClearAll}
+                  className="text-sm text-red-500 hover:text-red-600 font-medium px-3 py-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                >
+                  {t.clearAll}
+                </button>
+              </div>
+              
+              <CardList 
+                cards={generatedCards} 
+                onUpdateCard={handleUpdateCard} 
+                onDeleteCard={handleDeleteCard} 
+              />
+            </div>
+          )}
         </section>
       </main>
 
