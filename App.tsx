@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Header } from './components/Header';
@@ -8,8 +9,10 @@ import { AnkiStatusModal } from './components/AnkiStatusModal';
 import { checkConnection, getDeckNames, addNotes, createDeck } from './services/ankiService';
 import { generateFlashcards } from './services/geminiService';
 import { Flashcard, AnkiConnectionStatus, AppState } from './types';
+import { useLanguage } from './contexts/LanguageContext';
 
 const App: React.FC = () => {
+  const { language, t } = useLanguage();
   const [ankiStatus, setAnkiStatus] = useState<AnkiConnectionStatus>(AnkiConnectionStatus.DISCONNECTED);
   const [decks, setDecks] = useState<string[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -68,7 +71,8 @@ const App: React.FC = () => {
   const handleGenerate = async (topic: string, count: number, context: string) => {
     setAppState(AppState.GENERATING);
     try {
-      const rawCards = await generateFlashcards(topic, count, context);
+      // Pass current language to Gemini
+      const rawCards = await generateFlashcards(topic, count, context, language);
       const newCards: Flashcard[] = rawCards.map(c => ({
         id: uuidv4(),
         front: c.front,
@@ -78,7 +82,7 @@ const App: React.FC = () => {
       setGeneratedCards(newCards);
       setAppState(AppState.REVIEW);
     } catch (error) {
-      alert("Failed to generate cards. Please check your API Key or Try again.");
+      alert(t.genError);
       setAppState(AppState.IDLE);
     }
   };
@@ -112,22 +116,23 @@ const App: React.FC = () => {
       const duplicateCount = totalCount - successCount;
       
       if (successCount > 0) {
-        let message = `Successfully exported ${successCount} cards to deck "${deckName}"!`;
+        let message = t.exportSuccess.replace('{n}', successCount.toString()).replace('{deck}', deckName);
         if (duplicateCount > 0) {
-          message += `\n(${duplicateCount} duplicates were skipped)`;
+          message += t.duplicatesSkipped.replace('{n}', duplicateCount.toString());
         }
         alert(message);
         setGeneratedCards([]); // Clear after export
         setAppState(AppState.IDLE);
       } else if (duplicateCount > 0) {
         // If all were duplicates
-        alert(`Sync complete. No new cards were added because all ${duplicateCount} cards already exist in deck "${deckName}".`);
+        const msg = t.exportNoNew.replace('{n}', duplicateCount.toString()).replace('{deck}', deckName);
+        alert(msg);
       } else {
-        alert("Export failed. Please check AnkiConnect is running.");
+        alert(t.exportError);
       }
     } catch (error) {
       console.error(error);
-      alert("An error occurred during export.");
+      alert(t.exportError);
     } finally {
       setIsExporting(false);
     }
@@ -155,14 +160,14 @@ const App: React.FC = () => {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-              {appState === AppState.IDLE && generatedCards.length === 0 ? "Recent Cards" : "Generated Cards"}
+              {appState === AppState.IDLE && generatedCards.length === 0 ? t.recentCards : t.generatedCards}
             </h2>
             {generatedCards.length > 0 && (
               <button 
                 onClick={() => setGeneratedCards([])}
                 className="text-sm text-red-500 hover:text-red-600 font-medium"
               >
-                Clear All
+                {t.clearAll}
               </button>
             )}
           </div>

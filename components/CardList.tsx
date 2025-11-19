@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { Flashcard } from '../types';
 import { Trash2, Tag, Edit3, Check, X } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface CardListProps {
   cards: Flashcard[];
@@ -9,6 +11,7 @@ interface CardListProps {
 }
 
 export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDeleteCard }) => {
+  const { t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
 
   if (cards.length === 0) {
@@ -17,9 +20,9 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
         <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
           <Tag className="text-slate-300 dark:text-slate-600" size={32} />
         </div>
-        <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">No cards generated yet</h3>
+        <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">{t.noCards}</h3>
         <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto">
-          Enter a topic above and let the AI generate beautiful, formatted flashcards for you.
+          {t.noCardsDesc}
         </p>
       </div>
     );
@@ -36,7 +39,7 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
             className="relative bg-white dark:bg-slate-800 rounded-[24px] shadow-lg shadow-slate-200/60 dark:shadow-slate-900/40 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300 animate-slide-up group"
             style={{ animationDelay: `${index * 0.05}s` }}
           >
-            {/* Decorative Top Bar - Matches Anki Template */}
+            {/* Decorative Top Bar */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 to-violet-500"></div>
 
             {/* Card Header / Actions */}
@@ -53,7 +56,7 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
                    <button 
                     onClick={() => setEditingId(card.id)}
                     className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors"
-                    title="Edit Card"
+                    title={t.editCard}
                   >
                     <Edit3 size={18} />
                   </button>
@@ -61,7 +64,7 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
                 <button 
                   onClick={() => onDeleteCard(card.id)}
                   className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-                  title="Delete Card"
+                  title={t.deleteCard}
                 >
                   <Trash2 size={18} />
                 </button>
@@ -74,7 +77,7 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
               {/* Front Side */}
               <div className="flex flex-col h-full">
                 <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.1em] mb-4 block">
-                    Question
+                    {t.question}
                 </span>
                 
                 {isEditing ? (
@@ -97,13 +100,13 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
                 )}
               </div>
 
-              {/* Back Side - Divider Logic via Border */}
+              {/* Back Side */}
               <div className="relative flex flex-col h-full md:border-l md:border-slate-100 dark:md:border-slate-700 md:pl-12">
                 {/* Mobile Divider */}
                 <div className="md:hidden w-full h-px bg-slate-100 dark:bg-slate-700 my-6"></div>
 
                 <span className="text-xs font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-[0.1em] mb-4 block">
-                    Answer
+                    {t.answer}
                 </span>
 
                 {isEditing ? (
@@ -145,7 +148,7 @@ export const CardList: React.FC<CardListProps> = ({ cards, onUpdateCard, onDelet
                   className="flex items-center gap-2 px-5 py-2 bg-slate-900 dark:bg-slate-200 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 rounded-xl font-medium text-sm transition-all shadow-lg shadow-slate-900/20 dark:shadow-none"
                 >
                   <Check size={16} />
-                  <span>Done Editing</span>
+                  <span>{t.doneEditing}</span>
                 </button>
               </div>
             )}

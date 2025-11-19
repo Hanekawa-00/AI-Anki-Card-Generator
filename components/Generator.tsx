@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
 import { Sparkles, Loader2, FileText } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface GeneratorProps {
   onGenerate: (topic: string, count: number, context: string) => Promise<void>;
@@ -7,6 +9,7 @@ interface GeneratorProps {
 }
 
 export const Generator: React.FC<GeneratorProps> = ({ onGenerate, isGenerating }) => {
+  const { t } = useLanguage();
   const [topic, setTopic] = useState('');
   const [context, setContext] = useState('');
   const [count, setCount] = useState(5);
@@ -23,22 +26,22 @@ export const Generator: React.FC<GeneratorProps> = ({ onGenerate, isGenerating }
       <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <Sparkles className="text-primary-500 dark:text-primary-400" size={20} />
-          Create New Cards
+          {t.createCards}
         </h2>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Enter a topic and let Gemini AI generate study material for you.</p>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t.createCardsDesc}</p>
       </div>
       
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
         <div>
           <label htmlFor="topic" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-            What do you want to learn?
+            {t.topicLabel}
           </label>
           <input
             id="topic"
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g., Photosynthesis, Spanish Vocabulary, React Hooks..."
+            placeholder={t.topicPlaceholder}
             className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-900/50 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
             required
           />
@@ -46,31 +49,31 @@ export const Generator: React.FC<GeneratorProps> = ({ onGenerate, isGenerating }
 
         <div>
           <label htmlFor="context" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex justify-between">
-            <span>Additional Context (Optional)</span>
-            <span className="text-slate-400 dark:text-slate-500 font-normal text-xs flex items-center gap-1"><FileText size={10}/> Paste notes/articles</span>
+            <span>{t.contextLabel}</span>
+            <span className="text-slate-400 dark:text-slate-500 font-normal text-xs flex items-center gap-1"><FileText size={10}/> {t.pasteNotes}</span>
           </label>
           <textarea
             id="context"
             value={context}
             onChange={(e) => setContext(e.target.value)}
-            placeholder="Paste source text here to generate cards specifically from this content..."
+            placeholder={t.contextPlaceholder}
             className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-900/50 outline-none transition-all h-24 resize-none text-sm placeholder:text-slate-400 dark:placeholder:text-slate-600"
           />
         </div>
 
         <div className="flex items-center justify-between">
            <div className="flex items-center gap-3">
-            <label htmlFor="count" className="text-sm font-medium text-slate-700 dark:text-slate-300">Card Count:</label>
+            <label htmlFor="count" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.cardCount}</label>
             <select 
               id="count"
               value={count}
               onChange={(e) => setCount(Number(e.target.value))}
               className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 text-sm focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-900/50 outline-none"
             >
-              <option value={3}>3 Cards</option>
-              <option value={5}>5 Cards</option>
-              <option value={10}>10 Cards</option>
-              <option value={15}>15 Cards</option>
+              <option value={3}>3</option>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
             </select>
            </div>
 
@@ -82,12 +85,12 @@ export const Generator: React.FC<GeneratorProps> = ({ onGenerate, isGenerating }
              {isGenerating ? (
                <>
                 <Loader2 className="animate-spin" size={18} />
-                <span>Generating...</span>
+                <span>{t.generating}</span>
                </>
              ) : (
                <>
                 <Sparkles size={18} />
-                <span>Generate Cards</span>
+                <span>{t.generateButton}</span>
                </>
              )}
            </button>

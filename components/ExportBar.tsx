@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import { Download, Check, ChevronDown } from 'lucide-react';
+import { Download, ChevronDown } from 'lucide-react';
 import { Flashcard } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ExportBarProps {
   cards: Flashcard[];
@@ -11,6 +13,7 @@ interface ExportBarProps {
 }
 
 export const ExportBar: React.FC<ExportBarProps> = ({ cards, onExport, decks, isExporting, ankiConnected }) => {
+  const { t } = useLanguage();
   const [selectedDeck, setSelectedDeck] = useState<string>('Default');
   const [newDeckName, setNewDeckName] = useState('');
   const [isCreatingDeck, setIsCreatingDeck] = useState(false);
@@ -30,8 +33,8 @@ export const ExportBar: React.FC<ExportBarProps> = ({ cards, onExport, decks, is
       <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-2xl shadow-2xl dark:shadow-black/50 p-4 flex items-center justify-between ring-1 ring-slate-800 dark:ring-slate-600 transition-colors duration-300">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <span className="font-bold text-lg">{cards.length} Cards Ready</span>
-            <span className="text-slate-400 text-xs">Review and export to Anki</span>
+            <span className="font-bold text-lg">{cards.length} {t.cardsReady}</span>
+            <span className="text-slate-400 text-xs">{t.reviewAndExport}</span>
           </div>
         </div>
 
@@ -53,7 +56,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({ cards, onExport, decks, is
                       className="appearance-none bg-slate-800 dark:bg-slate-900 hover:bg-slate-700 dark:hover:bg-slate-950 text-white text-sm py-2 pl-4 pr-10 rounded-lg border border-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-primary-500 outline-none cursor-pointer transition-colors min-w-[140px]"
                     >
                       {decks.map(deck => <option key={deck} value={deck}>{deck}</option>)}
-                      <option value="___NEW___">+ Create New Deck</option>
+                      <option value="___NEW___">{t.createDeck}</option>
                     </select>
                     <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                  </div>
@@ -62,7 +65,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({ cards, onExport, decks, is
                    <input 
                     autoFocus
                     type="text" 
-                    placeholder="Deck Name"
+                    placeholder={t.deckNamePlaceholder}
                     className="bg-slate-800 dark:bg-slate-900 text-white text-sm py-2 px-3 rounded-lg border border-slate-700 focus:border-primary-500 outline-none w-32"
                     value={newDeckName}
                     onChange={e => setNewDeckName(e.target.value)}
@@ -71,7 +74,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({ cards, onExport, decks, is
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && newDeckName.trim()) {
-                        setSelectedDeck(newDeckName); // Logic to create handled in parent or lazy create
+                        setSelectedDeck(newDeckName);
                         setIsCreatingDeck(false);
                       }
                     }}
@@ -90,12 +93,12 @@ export const ExportBar: React.FC<ExportBarProps> = ({ cards, onExport, decks, is
                 ) : (
                   <Download size={18} />
                 )}
-                <span>Sync to Anki</span>
+                <span>{t.syncToAnki}</span>
               </button>
             </>
           ) : (
              <span className="text-amber-400 text-sm bg-amber-950/30 px-3 py-1.5 rounded border border-amber-900/50">
-               Connect Anki to Export
+               {t.connectToExport}
              </span>
           )}
         </div>
